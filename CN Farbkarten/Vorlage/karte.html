@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<title>CN Farbkarte</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* One Instagram post, 1080 x 1440 (3:4). Open as karte.html?s=<style>&c=<farbe> */
+:root{--olive:#585D49;--cream:#F3F0DD;--paper:#F6F2E6;--gold:#B59F5D;--ink:#24251F;
+  --wide:"Syncopate","Arial Black",sans-serif;--serif:"Instrument Serif","Times New Roman",serif;--sans:"Figtree",Arial,sans-serif}
+html,body{margin:0;padding:0;background:#000}
+#post{width:1080px;height:1440px;position:relative;overflow:hidden;font-family:var(--sans)}
+canvas{display:block}
+.ab{position:absolute}
+.wide{font-family:var(--wide);font-weight:700;letter-spacing:.24em;text-transform:uppercase}
+.ser{font-family:var(--serif);font-weight:400}
+</style></head><body>
+<div id="post"></div>
+<script>
+/* ---------- colour data: edit or extend this list ---------- */
+const FARBEN = {
+  tabak:     {name:'Tabak', art:'der', stoff:'Wildleder', tex:'suede', hex:'#6E4E36',
+              def:'Ein tiefes, warmes Braun mit einem Hauch Gold, wie getrocknete Tabakblätter. Ruhig, erwachsen, zeitlos.',
+              passt:[['Sand','#C9B38E'],['Oliv','#5E6347']]},
+  moos:      {name:'Moosgrün', art:'das', stoff:'Cord', tex:'cord', hex:'#4F5638',
+              def:'Das gedämpfte Grün von Moos auf altem Stein. Erdig, weich und nie laut.',
+              passt:[['Cognac','#9A5B2E'],['Ecru','#E9E2CF']]},
+  cognac:    {name:'Cognac', art:'der', stoff:'Glattleder', tex:'leather', hex:'#93572D',
+              def:'Ein rötliches Goldbraun, benannt nach dem Weinbrand. Es glänzt, wenn Licht darauf fällt, und wird mit jedem Jahr schöner.',
+              passt:[['Moosgrün','#4F5638'],['Creme','#EFE7D3']]},
+  sand:      {name:'Sand', art:'der', stoff:'Leinen', tex:'linen', hex:'#C2AC86',
+              def:'Ein helles, warmes Beige zwischen Ecru und Ocker. Die Farbe des Sommers, die man das ganze Jahr trägt.',
+              passt:[['Tabak','#6E4E36'],['Weiß','#F7F5EF']]},
+  terrakotta:{name:'Terrakotta', art:'die', stoff:'Schurwolle', tex:'wool', hex:'#9E5539',
+              def:'Gebrannte Erde. Ein rötliches Orangebraun, warm wie ein Ziegeldach in der Abendsonne.',
+              passt:[['Oliv','#5E6347'],['Sand','#C2AC86']]},
+  oliv:      {name:'Oliv', art:'das', stoff:'Fischgrat', tex:'herringbone', hex:'#5E6347',
+              def:'Ein graustichiges Gelbgrün, wie unreife Oliven. Unsere Hausfarbe, und die ruhigste von allen.',
+              passt:[['Cognac','#93572D'],['Ecru','#E9E2CF']]},
+};
+const NUM = {tabak:'01',moos:'02',cognac:'03',sand:'04',terrakotta:'05',oliv:'06'};
+
+/* ---------- procedural fabric textures ---------- */
+function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+function makeNoise(seed){const r=rng(seed),N=256,p=new Float32Array(N*N);for(let i=0;i<N*N;i++)p[i]=r();
+  const sm=t=>t*t*(3-2*t);
+  return (x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=sm(x-xi),yf=sm(y-yi);
+    const a=p[((yi&255)*N)+(xi&255)],b=p[((yi&255)*N)+((xi+1)&255)],c=p[(((yi+1)&255)*N)+(xi&255)],d=p[(((yi+1)&255)*N)+((xi+1)&255)];
+    return a+(b-a)*xf+(c-a)*yf+(a-b-c+d)*xf*yf;}}
+const n1=makeNoise(7),n2=makeNoise(19),n3=makeNoise(43);
+const fbm=(x,y)=>0.55*n1(x,y)+0.3*n2(x*2.1,y*2.1)+0.15*n3(x*4.3,y*4.3);
+
+function hexRgb(h){const v=parseInt(h.slice(1),16);return[(v>>16)&255,(v>>8)&255,v&255]}
+
+function texture(kind, hex, W, H){
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  const img=g.createImageData(W,H),D=img.data,[R,G,B]=hexRgb(hex),r=rng(3);
+  let cells=null;
+  if(kind==='leather'){const cs=13;cells={cs,pts:{}};const rr=rng(11);
+    for(let cy=-1;cy<=H/cs+1;cy++)for(let cx=-1;cx<=W/cs+1;cx++)cells.pts[cx+','+cy]=[(cx+rr())*cs,(cy+rr())*cs];}
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    let f=1, grain=(r()-.5);
+    if(kind==='suede'){ f=0.84+0.26*fbm(x/140,y/140)+0.1*(n2(x/3,y/2)-.5)+0.08*(n3(x/1.5,y/1.5)-.5)+0.12*grain; }
+    else if(kind==='cord'){ const rib=0.5+0.5*Math.cos(2*Math.PI*x/18); f=0.62+0.42*Math.pow(rib,0.55)+0.1*(fbm(x/90,y/220)-.5)+0.09*grain; }
+    else if(kind==='leather'){ const cx=Math.floor(x/cells.cs),cy=Math.floor(y/cells.cs);let d1=1e9,d2=1e9;
+      for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const p=cells.pts[(cx+i)+','+(cy+j)];if(!p)continue;const d=Math.hypot(x-p[0],y-p[1]);if(d<d1){d2=d1;d1=d}else if(d<d2)d2=d}
+      const edge=Math.min(1,(d2-d1)/2.2); f=0.86+0.12*edge+0.22*(fbm(x/240,y/240)-.5)+0.05*grain+0.04*(n3(x/5,y/5)-.5); }
+    else if(kind==='linen'){ const h=Math.sin(y*2*Math.PI/7)*(0.6+0.8*n1(x/60,y/7)), v=Math.sin(x*2*Math.PI/7)*(0.6+0.8*n2(x/7,y/60));
+      f=0.93+0.045*h+0.045*v+0.08*(fbm(x/160,y/160)-.5)+0.06*grain; }
+    else if(kind==='wool'){ f=0.84+0.3*(fbm(x/16,y/16)-.5)+0.14*(fbm(x/180,y/180)-.5)+0.12*grain+0.12; }
+    else if(kind==='herringbone'){ const col=Math.floor(x/46),dir=col%2?1:-1,t=y+dir*x;
+      const tw=0.5+0.5*Math.sin(t*2*Math.PI/10); f=0.78+0.28*tw-0.06*((x%46)<2?1:0)+0.12*(fbm(x/120,y/120)-.5)+0.08*grain; }
+    else { f=0.94+0.08*(fbm(x/260,y/260)-.5)+0.05*grain; }
+    const i=(y*W+x)*4; D[i]=Math.max(0,Math.min(255,R*f));D[i+1]=Math.max(0,Math.min(255,G*f));D[i+2]=Math.max(0,Math.min(255,B*f));D[i+3]=255;
+  }
+  g.putImageData(img,0,0);
+  if(kind==='wool'){g.globalAlpha=.08;g.strokeStyle='#fff';g.lineWidth=1;const rr=rng(5);for(let k=0;k<5000;k++){const x=rr()*W,y=rr()*H,a=rr()*6.28,l=4+rr()*10;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}g.globalAlpha=1}
+  /* soft light falloff */
+  const gr=g.createRadialGradient(W*.45,H*.4,W*.1,W*.5,H*.5,W*.95);gr.addColorStop(0,'rgba(255,255,255,0.06)');gr.addColorStop(1,'rgba(0,0,0,0.18)');g.fillStyle=gr;g.fillRect(0,0,W,H);
+  return cv;
+}
+const lighten=(hex,k)=>{const[r,g,b]=hexRgb(hex);return`rgb(${Math.round(r+(255-r)*k)},${Math.round(g+(255-g)*k)},${Math.round(b+(255-b)*k)})`};
+const darken=(hex,k)=>{const[r,g,b]=hexRgb(hex);return`rgb(${Math.round(r*(1-k))},${Math.round(g*(1-k))},${Math.round(b*(1-k))})`};
+const isLight=hex=>{const[r,g,b]=hexRgb(hex);return(r*.299+g*.587+b*.114)>150};
+
+/* ---------- the five styles ---------- */
+const P=document.getElementById('post');
+const put=(el,css,html='')=>{const d=document.createElement(el==='canvas'?'div':el);d.className='ab';d.style.cssText=css;d.innerHTML=html;P.appendChild(d);return d};
+function addCanvas(cv,css){cv.className='ab';cv.style.cssText=css;P.appendChild(cv);return cv}
+
+const STYLES={
+  /* 1 Stoffmuster: full fabric, name centred, pinked left edge like a cut swatch */
+  muster(f,key){
+    const txt=isLight(f.hex)?'#2A251D':'#FFFDF6';
+    addCanvas(texture(f.tex,f.hex,1080,1440),'left:0;top:0');
+    const zz=document.createElement('canvas');zz.width=40;zz.height=1440;const z=zz.getContext('2d');z.fillStyle='#F3F0DD';z.beginPath();z.moveTo(0,0);for(let y=0;y<=1440;y+=24){z.lineTo(14,y+12);z.lineTo(0,y+24)}z.lineTo(0,1440);z.fill();addCanvas(zz,'left:0;top:0');
+    put('div',`left:0;right:0;top:600px;text-align:center;color:${txt};font:400 170px/1 var(--serif);letter-spacing:-.01em;text-shadow:0 4px 30px rgba(0,0,0,.18)`,f.name);
+    put('div',`left:0;right:0;top:790px;text-align:center;color:${txt};font:500 54px/1 var(--sans)`,f.stoff);
+    put('div',`left:0;right:0;bottom:84px;text-align:center;color:${txt};opacity:.8;font-size:20px`,'<span class="wide">Colorful Neighbourhood</span>');
+    put('div',`right:72px;top:70px;color:${txt};opacity:.8;font:400 40px/1 var(--serif)`,'Nº '+NUM[key]);
+  },
+  /* 2 Lexikon: dictionary entry under a fabric window */
+  lexikon(f,key){
+    put('div','left:0;top:0;width:1080px;height:1440px;background:#F6F2E6');
+    addCanvas(texture(f.tex,f.hex,936,760),'left:72px;top:72px');
+    put('div','left:72px;top:880px;color:#24251F;font:400 128px/1 var(--serif)',`${f.name}<span style="font-style:italic;color:#8B8676;font-size:72px">, ${f.art}</span>`);
+    put('div','left:76px;top:1028px;color:#8F7A3C;font-size:19px',`<span class="wide">Farbe · ${f.stoff}</span>`);
+    put('div','left:72px;right:120px;top:1082px;color:#3A3A31;font:italic 400 43px/1.24 var(--serif)',f.def);
+    put('div','left:72px;right:72px;bottom:64px;display:flex;justify-content:space-between;color:#585D49;font-size:17px;border-top:2px solid #B59F5D;padding-top:22px',`<span class="wide">Colorful Neighbourhood</span><span class="wide">Nº ${NUM[key]}</span>`);
+  },
+  /* 3 Musterbuch: a physical swatch on cream, with a tailor's label */
+  musterbuch(f,key){
+    put('div','left:0;top:0;width:1080px;height:1440px;background:#EDE6D6');
+    const W=760,H=820,cv=texture(f.tex,f.hex,W,H),g=cv.getContext('2d');
+    g.globalCompositeOperation='destination-in';g.fillStyle='#000';g.beginPath();const t=14,s=22;g.moveTo(0,0);
+    for(let x=0;x<W;x+=s){g.lineTo(x+s/2,t);g.lineTo(x+s,0)}for(let y=0;y<H;y+=s){g.lineTo(W-t,y+s/2);g.lineTo(W,y+s)}
+    for(let x=W;x>0;x-=s){g.lineTo(x-s/2,H-t);g.lineTo(x-s,H)}for(let y=H;y>0;y-=s){g.lineTo(t,y-s/2);g.lineTo(0,y-s)}g.fill();
+    addCanvas(cv,'left:160px;top:150px;filter:drop-shadow(0 18px 26px rgba(60,45,25,.28))');
+    put('div','left:250px;right:250px;top:930px;height:330px;background:#FBF8F0;box-shadow:0 10px 24px rgba(60,45,25,.18);padding:34px 40px;box-sizing:border-box',
+      `<div class="wide" style="font-size:15px;color:#585D49">Colorful Neighbourhood</div>
+       <div class="ser" style="font-size:84px;line-height:1;color:#24251F;margin-top:26px">${f.name}</div>
+       <div style="font-size:30px;color:#3A3A31;margin-top:12px">${f.stoff}</div>
+       <div style="position:absolute;left:40px;right:40px;bottom:30px;display:flex;justify-content:space-between;border-top:1.5px solid #B59F5D;padding-top:14px;font-size:20px;color:#6C6B60"><span>Musterbuch</span><span>Nº ${NUM[key]}</span></div>`);
+    put('div','left:530px;top:910px;width:20px;height:40px;background:#9C9A92;border-radius:3px;box-shadow:inset 0 0 0 4px #BDBBB3');
+  },
+  /* 4 Farbformel: fabric above, Karl's three-colour formula below */
+  formel(f,key){
+    const txt=isLight(f.hex)?'#2A251D':'#FFFDF6';
+    addCanvas(texture(f.tex,f.hex,1080,1000),'left:0;top:0');
+    put('div',`left:80px;top:80px;color:${txt};opacity:.85;font-size:18px`,'<span class="wide">Karls Farbformel</span>');
+    put('div',`left:76px;top:720px;color:${txt};font:400 150px/1 var(--serif)`,f.name);
+    put('div',`left:80px;top:886px;color:${txt};font:500 40px/1 var(--sans)`,f.stoff);
+    put('div','left:0;top:1000px;width:1080px;height:440px;background:#F6F2E6');
+    const dots=[[f.name,f.hex,true],...f.passt.map(([n,h])=>[n,h,false])];
+    dots.forEach(([n,h,main],i)=>{const x=110+i*300;
+      const d=put('div',`left:${x}px;top:1070px;width:200px;height:200px;border-radius:50%;overflow:hidden;background:${h};box-shadow:inset 0 0 0 2px rgba(0,0,0,.06)`);
+      if(main){const c=texture(f.tex,f.hex,200,200);c.style.cssText='display:block';d.appendChild(c)}
+      put('div',`left:${x-20}px;width:240px;top:1296px;text-align:center;color:#24251F;font:400 40px/1 var(--serif)`,n);
+      if(i<2)put('div',`left:${x+226}px;top:1146px;color:#B59F5D;font:400 54px/1 var(--serif)`,'+');
+    });
+    put('div','right:80px;bottom:44px;color:#585D49;font-size:15px','<span class="wide">Colorful Neighbourhood</span>');
+  },
+  /* 5 Still: flat colour, tone-on-tone type, the definition as the post */
+  still(f,key){
+    const light=isLight(f.hex), bg=f.hex, txt=light?darken(f.hex,.62):lighten(f.hex,.72);
+    const cv=texture('flat',bg,1080,1440);addCanvas(cv,'left:0;top:0');
+    put('div',`left:0;right:0;top:520px;text-align:center;color:${txt};font-size:24px`,`<span class="wide">${f.name}</span>`);
+    put('div',`left:150px;right:150px;top:590px;text-align:center;color:${txt};font:400 58px/1.22 var(--serif)`,f.def);
+    put('div',`left:0;right:0;bottom:120px;text-align:center;color:${txt};opacity:.75;font:500 26px/1 var(--sans)`,`${f.stoff} · Nº ${NUM[key]}`);
+    put('div',`left:0;right:0;bottom:70px;text-align:center;color:${txt};opacity:.6;font-size:15px`,'<span class="wide">Colorful Neighbourhood</span>');
+  },
+};
+
+const q=new URLSearchParams(location.search), s=q.get('s')||'muster', c=q.get('c')||'tabak';
+document.fonts.ready.then(()=>{STYLES[s](FARBEN[c],c);document.body.dataset.ready='1'});
+</script>
+</body></html>
