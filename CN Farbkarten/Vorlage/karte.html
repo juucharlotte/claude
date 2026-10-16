@@ -35,8 +35,34 @@ const FARBEN = {
   oliv:      {name:'Oliv', art:'das', stoff:'Fischgrat', tex:'herringbone', hex:'#5E6347',
               def:'Ein graustichiges Gelbgrün, wie unreife Oliven. Unsere Hausfarbe, und die ruhigste von allen.',
               passt:[['Cognac','#93572D'],['Ecru','#E9E2CF']]},
+  /* Blautöne */
+  marine:    {name:'Marine', art:'das', stoff:'Kammgarn', tex:'twill', hex:'#232F4A',
+              def:'Das tiefe Dunkelblau von Uniformen und Segeln. Der verlässlichste Ton im Kleiderschrank, vom Büro bis zur Hochzeit.'},
+  indigo:    {name:'Indigo', art:'das', stoff:'Denim', tex:'denim', hex:'#2F3D60',
+              def:'Das Blau der Jeans, gewonnen aus einer Pflanze. Es verblasst mit jedem Tragen, und genau das macht es schön.'},
+  petrol:    {name:'Petrol', art:'das', stoff:'Cord', tex:'cord', hex:'#2F5660',
+              def:'Ein Blau mit grünem Unterton, irgendwo zwischen Meer und Tannenwald. Ungewöhnlich, aber leicht zu tragen.'},
+  taube:     {name:'Taubenblau', art:'das', stoff:'Leinen', tex:'linen', hex:'#71859A',
+              def:'Ein helles, graues Blau wie das Gefieder einer Taube. Leise, frisch und freundlich zu fast jeder Farbe.'},
+  rauch:     {name:'Rauchblau', art:'das', stoff:'Wildleder', tex:'suede', hex:'#4F6073',
+              def:'Ein Blau, durch das ein wenig Grau zieht, wie Rauch über dem Wasser. Ruhig, kühl und erwachsen.'},
+  mitternacht:{name:'Mitternachtsblau', art:'das', stoff:'Flanell', tex:'wool', hex:'#1F2739',
+              def:'So dunkel, dass es fast schwarz wirkt, und doch weicher als Schwarz. Die elegante Wahl für den Abend.'},
+  /* Rottöne */
+  bordeaux:  {name:'Bordeaux', art:'das', stoff:'Strick', tex:'knit', hex:'#6B2A2F',
+              def:'Ein tiefes Rot mit violettem Schimmer, benannt nach dem Wein. Warm, edel und im Herbst zu Hause.'},
+  ochsenblut:{name:'Ochsenblut', art:'das', stoff:'Glattleder', tex:'leather', hex:'#5A201D',
+              def:'Ein sehr dunkles, bräunliches Rot, ein Klassiker bei Lederschuhen. Kräftig, ohne laut zu sein.'},
+  ziegel:    {name:'Ziegelrot', art:'das', stoff:'Leinen', tex:'linen', hex:'#9A4535',
+              def:'Das Rot gebrannter Ziegel, mit einem Hauch Orange. Erdig, warm und sonnig.'},
+  rost:      {name:'Rost', art:'der', stoff:'Cord', tex:'cord', hex:'#8A4A2C',
+              def:'Ein rötliches Braun mit Orangeton, wie Eisen, das viel Wetter erlebt hat. Lebendig und herbstlich.'},
+  kirsche:   {name:'Kirschrot', art:'das', stoff:'Samt', tex:'velvet', hex:'#7A2333',
+              def:'Ein reifes, dunkles Rot wie Kirschen im Juli. Die Farbe, die man im Raum zuerst sieht.'},
+  rosenholz: {name:'Rosenholz', art:'das', stoff:'Wildleder', tex:'suede', hex:'#985E58',
+              def:'Ein gedämpftes Rosabraun, wie das Holz, nach dem es benannt ist. Weich, warm und überraschend vielseitig.'},
 };
-const NUM = {tabak:'01',moos:'02',cognac:'03',sand:'04',terrakotta:'05',oliv:'06'};
+const NUM = {tabak:'01',moos:'02',cognac:'03',sand:'04',terrakotta:'05',oliv:'06',marine:'07',indigo:'08',petrol:'09',taube:'10',rauch:'11',mitternacht:'12',bordeaux:'13',ochsenblut:'14',ziegel:'15',rost:'16',kirsche:'17',rosenholz:'18'};
 
 /* ---------- procedural fabric textures ---------- */
 function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
@@ -57,7 +83,7 @@ function texture(kind, hex, W, H){
   if(kind==='leather'){const cs=13;cells={cs,pts:{}};const rr=rng(11);
     for(let cy=-1;cy<=H/cs+1;cy++)for(let cx=-1;cx<=W/cs+1;cx++)cells.pts[cx+','+cy]=[(cx+rr())*cs,(cy+rr())*cs];}
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-    let f=1, grain=(r()-.5);
+    let f=1, wl=0, grain=(r()-.5);
     if(kind==='suede'){ f=0.84+0.26*fbm(x/140,y/140)+0.1*(n2(x/3,y/2)-.5)+0.08*(n3(x/1.5,y/1.5)-.5)+0.12*grain; }
     else if(kind==='cord'){ const rib=0.5+0.5*Math.cos(2*Math.PI*x/18); f=0.62+0.42*Math.pow(rib,0.55)+0.1*(fbm(x/90,y/220)-.5)+0.09*grain; }
     else if(kind==='leather'){ const cx=Math.floor(x/cells.cs),cy=Math.floor(y/cells.cs);let d1=1e9,d2=1e9;
@@ -68,8 +94,15 @@ function texture(kind, hex, W, H){
     else if(kind==='wool'){ f=0.84+0.3*(fbm(x/16,y/16)-.5)+0.14*(fbm(x/180,y/180)-.5)+0.12*grain+0.12; }
     else if(kind==='herringbone'){ const col=Math.floor(x/46),dir=col%2?1:-1,t=y+dir*x;
       const tw=0.5+0.5*Math.sin(t*2*Math.PI/10); f=0.78+0.28*tw-0.06*((x%46)<2?1:0)+0.12*(fbm(x/120,y/120)-.5)+0.08*grain; }
+    else if(kind==='twill'){ f=0.9+0.09*Math.sin((x+y)*2*Math.PI/6)+0.1*(fbm(x/200,y/200)-.5)+0.05*grain; }
+    else if(kind==='denim'){ const tw=0.5+0.5*Math.sin((x-y)*2*Math.PI/5); f=0.84+0.16*tw+0.12*(n1(x/4,y/260)-.5)+0.12*(fbm(x/160,y/160)-.5)+0.06*grain;
+      wl=0.32*tw*Math.max(0,n2(x/1.6,y/1.6)-.35)+0.08*Math.max(0,n3(x/3,y/120)-.55); }
+    else if(kind==='knit'){ const cw=20,ch=15,u=(x%cw)/cw,v=(y%ch)/ch;
+      const dl=Math.abs((u-0)-(v*0.5)), dr=Math.abs((1-u)-(v*0.5)), leg=Math.max(0,1-Math.min(dl,dr)*4.2);
+      f=0.66+0.42*Math.pow(leg,0.7)+0.08*(fbm(x/120,y/120)-.5)+0.08*grain; }
+    else if(kind==='velvet'){ f=0.78+0.4*(fbm(x/320,y/320)-.35)+0.05*(n3(x/2,y/2)-.5)+0.04*grain; }
     else { f=0.94+0.08*(fbm(x/260,y/260)-.5)+0.05*grain; }
-    const i=(y*W+x)*4; D[i]=Math.max(0,Math.min(255,R*f));D[i+1]=Math.max(0,Math.min(255,G*f));D[i+2]=Math.max(0,Math.min(255,B*f));D[i+3]=255;
+    const i=(y*W+x)*4; D[i]=Math.max(0,Math.min(255,R*f*(1-wl)+222*wl));D[i+1]=Math.max(0,Math.min(255,G*f*(1-wl)+226*wl));D[i+2]=Math.max(0,Math.min(255,B*f*(1-wl)+234*wl));D[i+3]=255;
   }
   g.putImageData(img,0,0);
   if(kind==='wool'){g.globalAlpha=.08;g.strokeStyle='#fff';g.lineWidth=1;const rr=rng(5);for(let k=0;k<5000;k++){const x=rr()*W,y=rr()*H,a=rr()*6.28,l=4+rr()*10;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}g.globalAlpha=1}
@@ -149,6 +182,22 @@ const STYLES={
   },
 };
 
+STYLES.cover=()=>{put('div','left:0;top:0;width:1080px;height:1440px;background:#585D49');
+  put('div','left:0;right:0;top:470px;text-align:center;color:#F3F0DD;font:400 46px/1 var(--wide);letter-spacing:.08em','COLORFUL');
+  put('div','left:0;right:0;top:530px;text-align:center;color:#F3F0DD;font:400 128px/1 var(--serif);text-transform:uppercase','Neighbourhood');
+  put('div','left:0;right:0;top:760px;text-align:center;color:#B59F5D;font:400 92px/1 var(--serif)','Farbkarten');
+  put('div','left:0;right:0;top:880px;text-align:center;color:#F3F0DD;opacity:.85;font:500 32px/1.5 var(--sans)','4 Stile · 18 Farben<br>Erdtöne, Blautöne, Rottöne');
+  put('div','left:0;right:0;bottom:90px;text-align:center;color:#F3F0DD;opacity:.7;font-size:18px','<span class="wide">Instagram · 1080 × 1440</span>');};
+STYLES.divider=(f,key)=>{const t={muster:['1','Stoffmuster','Der Stoff füllt das Bild, Name und Material in der Mitte, gezackte Kante wie ein Musterabschnitt.'],
+  lexikon:['2','Lexikon','Ein Stofffenster über einem Wörterbucheintrag. Die Definition ist der Post.'],
+  musterbuch:['3','Musterbuch','Ein echtes Stoffmuster mit Schneider-Etikett, wie eine Seite aus dem Musterbuch.'],
+  still:['4','Still','Flache Farbe, die Definition Ton in Ton. Gut als erster Slide oder als ruhige Kachel im Raster.']}[key];
+  put('div','left:0;top:0;width:1080px;height:1440px;background:#F3F0DD');
+  put('div','left:96px;top:420px;color:#B59F5D;font:400 220px/1 var(--serif)',t[0]);
+  put('div','left:96px;top:660px;color:#24251F;font:400 140px/1 var(--serif)',t[1]);
+  put('div','left:100px;right:160px;top:830px;color:#3A3A31;font:400 38px/1.4 var(--sans)',t[2]);
+  put('div','left:100px;top:1040px;color:#585D49;font-size:20px','<span class="wide">Erdtöne · Blautöne · Rottöne</span>');
+  put('div','left:100px;bottom:90px;color:#585D49;font-size:18px','<span class="wide">Colorful Neighbourhood</span>');};
 const q=new URLSearchParams(location.search), s=q.get('s')||'muster', c=q.get('c')||'tabak';
 document.fonts.ready.then(()=>{STYLES[s](FARBEN[c],c);document.body.dataset.ready='1'});
 </script>

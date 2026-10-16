@@ -1,13 +1,13 @@
 # CN Farbkarten: Vorlage
 
-Instagram-Posts im Format 1080 × 1440 (3:4), fünf Stile:
-`muster` (Stoffmuster), `lexikon`, `musterbuch`, `formel` (Karls Farbformel), `still`.
+Instagram-Posts im Format 1080 × 1440 (3:4), vier Stile:
+`muster` (Stoffmuster), `lexikon`, `musterbuch`, `still`. 18 Farben: Erd-, Blau- und Rottöne.
 
 **Neue Farbe anlegen:** in `karte.html` im Block `FARBEN` einen Eintrag ergänzen
 (Name, Artikel, Stoff, Textur, Hex-Farbe, Definition, zwei passende Farben)
 und in `NUM` eine Nummer vergeben.
 Texturen: `suede` (Wildleder), `cord`, `leather` (Glattleder), `linen` (Leinen),
-`wool` (Wolle), `herringbone` (Fischgrat), `flat` (glatt).
+`wool` (Wolle), `herringbone` (Fischgrat), `twill` (Kammgarn), `denim`, `knit` (Strick), `velvet` (Samt), `flat` (glatt).
 
 **Ansehen:** `karte.html?s=lexikon&c=tabak` im Browser öffnen.
 
